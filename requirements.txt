@@ -1,0 +1,20 @@
+fastapi
+uvicorn[standard]
+sqlalchemy>=2.0
+alembic
+pydantic>=2.6
+pydantic-settings
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt<4.1
+python-dotenv
+python-multipart
+slowapi
+httpx
+pytest
+
+# Garmin sync (unofficial web API — pinned to what ai-coach runs; `garth` is
+# unmaintained, so all usage is isolated in app/garmin/client.py)
+garminconnect==0.2.38
+garth==0.5.21
+cryptography
