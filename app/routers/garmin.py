@@ -17,11 +17,13 @@ from app.deps import get_current_athlete
 from app.database import get_db
 from app.garmin import auth as garmin_auth
 from app.garmin.ingest import sync_activities
+from app.garmin.profile import athlete_metrics
 from app.models import Athlete
 from app.sanitize import sanitize_for_json
 from app.schemas import (
     GarminConnectBody,
     GarminConnectResult,
+    GarminMetricsOut,
     GarminMfaBody,
     GarminStatusOut,
     GarminSyncResult,
@@ -65,6 +67,19 @@ def get_status(
     athlete: Athlete = Depends(get_current_athlete),
 ) -> dict:
     return garmin_auth.status_payload(db, athlete)
+
+
+@router.get("/thresholds", response_model=GarminMetricsOut)
+async def garmin_thresholds(
+    db: Session = Depends(get_db),
+    athlete: Athlete = Depends(get_current_athlete),
+) -> dict:
+    """Preview training metrics from Garmin. Does not write — the client picks
+    which fields to apply via PUT /me/athlete/thresholds."""
+    import asyncio
+
+    client = await garmin_auth.get_authed_client(db, athlete)
+    return await asyncio.to_thread(athlete_metrics, client)
 
 
 @router.post("/sync", response_model=GarminSyncResult)

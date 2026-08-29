@@ -9,6 +9,7 @@ import pytest
 from app.garmin import ingest
 from app.garmin.client import LoginOutcome
 from app.garmin.mapper import map_sport, pick_match, resolve_actual_tss
+from app.garmin.profile import athlete_metrics
 from app.sanitize import sanitize_for_json
 from tests.conftest import auth_headers
 
@@ -256,3 +257,67 @@ def test_disconnect(client, monkeypatch):
     _connect(client, h, monkeypatch)
     assert client.delete("/me/garmin/connect", headers=h).status_code == 204
     assert client.get("/me/garmin/status", headers=h).json()["connected"] is False
+
+
+# --- threshold import ------------------------------------------------------
+
+
+class MetricsClient:
+    def get_profile(self):
+        return {
+            "userData": {
+                "lactateThresholdHeartRate": 177,
+                "lactateThresholdSpeed": 0.364,  # deliberately ignored
+                "vo2MaxRunning": 57.0,
+                "vo2MaxCycling": 56.0,
+            }
+        }
+
+    def get_cycling_ftp(self):
+        return {"functionalThresholdPower": 259}
+
+    def get_race_predictions(self):
+        return {"time5K": 1050, "time10K": 2200, "timeHalfMarathon": 4892}
+
+
+def test_athlete_metrics_maps_and_derives():
+    out = athlete_metrics(MetricsClient())
+    assert out["thresholds"] == {
+        "ftpWatts": 259,
+        "thresholdHr": 177,
+        "runThresholdPaceSecPerKm": 220,  # 2200 / 10, not from lactateThresholdSpeed
+    }
+    assert out["insights"]["vo2MaxRunning"] == 57.0
+    assert out["insights"]["racePredictions"]["time10K"] == 2200
+
+
+def test_athlete_metrics_tolerates_missing_data():
+    class Empty:
+        def get_profile(self):
+            return None
+
+        def get_cycling_ftp(self):
+            raise RuntimeError("garmin 500")
+
+        def get_race_predictions(self):
+            return {}
+
+    out = athlete_metrics(Empty())
+    assert out == {"thresholds": {}, "insights": {}}
+
+
+def test_garmin_thresholds_endpoint(client, monkeypatch):
+    h = auth_headers(client)
+    _connect(client, h, monkeypatch)
+
+    async def _fake(db, athlete):
+        return MetricsClient()
+
+    monkeypatch.setattr("app.routers.garmin.garmin_auth.get_authed_client", _fake)
+    body = client.get("/me/garmin/thresholds", headers=h).json()
+    assert body["thresholds"] == {
+        "ftpWatts": 259,
+        "thresholdHr": 177,
+        "runThresholdPaceSecPerKm": 220,
+    }
+    assert body["insights"]["vo2MaxCycling"] == 56.0

@@ -11,7 +11,7 @@ missing key is "don't touch" while an explicit ``null`` clears the value.
 
 from __future__ import annotations
 
-from typing import Annotated, Literal, Optional, Union
+from typing import Annotated, Any, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
@@ -351,3 +351,18 @@ class GarminSyncResult(CamelModel):
     updated: int = 0
     matched: int = 0
     skipped: int = 0
+
+
+class GarminThresholds(CamelModel):
+    """Subset of ThresholdValues that Garmin can supply (any may be absent)."""
+
+    ftp_watts: Optional[float] = None
+    threshold_hr: Optional[float] = None
+    run_threshold_pace_sec_per_km: Optional[float] = None
+
+
+class GarminMetricsOut(CamelModel):
+    # `thresholds` is applied by the client; `insights` is display-only
+    # passthrough (vo2MaxRunning, vo2MaxCycling, racePredictions{...}).
+    thresholds: GarminThresholds
+    insights: dict[str, Any] = Field(default_factory=dict)

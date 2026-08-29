@@ -208,3 +208,11 @@ class GarminClient:
     def get_profile(self) -> dict | None:
         self._ensure_display_name(network_ok=True)
         return self._api.get_user_profile()  # type: ignore[union-attr]
+
+    def get_cycling_ftp(self) -> dict | None:
+        self._ensure_display_name(network_ok=True)
+        return self._api.get_cycling_ftp()  # type: ignore[union-attr]
+
+    def get_race_predictions(self) -> dict | None:
+        self._ensure_display_name(network_ok=True)
+        return self._api.get_race_predictions()  # type: ignore[union-attr]
