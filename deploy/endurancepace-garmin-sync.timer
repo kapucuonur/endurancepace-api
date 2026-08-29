@@ -1,0 +1,13 @@
+# /etc/systemd/system/endurancepace-garmin-sync.timer
+#   sudo systemctl enable --now endurancepace-garmin-sync.timer
+
+[Unit]
+Description=Run EndurancePace Garmin sync every 30 min
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=30min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

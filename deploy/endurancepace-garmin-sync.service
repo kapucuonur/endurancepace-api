@@ -1,0 +1,14 @@
+# /etc/systemd/system/endurancepace-garmin-sync.service
+# v2 periodic Garmin sync. Paired with endurancepace-garmin-sync.timer.
+# Not needed for v1 (the app calls POST /me/garmin/sync).
+
+[Unit]
+Description=EndurancePace Garmin sync (all connected athletes)
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=pi
+WorkingDirectory=/home/pi/endurancepace-api
+ExecStart=/home/pi/endurancepace_env/bin/python -m scripts.garmin_sync_all
+Environment=PATH=/home/pi/endurancepace_env/bin

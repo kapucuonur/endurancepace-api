@@ -1,0 +1,29 @@
+# /etc/systemd/system/endurancepace-api.service
+# Mirrors bikefit-api.service. Install:
+#   sudo cp deploy/endurancepace-api.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now endurancepace-api
+#
+# Config is read from /home/pi/endurancepace-api/.env by the app itself
+# (pydantic-settings, env_file=".env", relative to WorkingDirectory).
+#
+# --workers 1 is REQUIRED: the Garmin MFA `client_state` is held in-process for
+# the ~10-minute window between /connect and /connect/mfa (garth's resume state
+# contains a live HTTP client and can't be serialized). Everything else is
+# DB-backed, so bumping workers later only breaks MFA re-linking.
+
+[Unit]
+Description=EndurancePace API (FastAPI)
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/endurancepace-api
+ExecStart=/home/pi/endurancepace_env/bin/uvicorn main:app --host 0.0.0.0 --port 8006 --workers 1
+Restart=on-failure
+RestartSec=5
+Environment=PATH=/home/pi/endurancepace_env/bin
+
+[Install]
+WantedBy=multi-user.target
