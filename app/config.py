@@ -21,8 +21,11 @@ class Settings(BaseSettings):
 
     # Comma-separated browser origins. The native app sends no Origin so CORS
     # doesn't gate it — this only matters for the web build / dev tools.
-    # Defaults to the Expo web dev ports; "*" is explicit opt-in.
-    cors_origins: str = "http://localhost:8081,http://localhost:19006"
+    # Expo web dev ports plus the deployed web app; "*" is explicit opt-in.
+    cors_origins: str = (
+        "http://localhost:8081,http://localhost:19006,"
+        "https://endurancepace.coachonurai.com"
+    )
 
     # Gate for POST /me/reset (wipe + reseed the caller's own data).
     allow_reset: bool = False
