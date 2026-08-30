@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     # Gate for POST /me/reset (wipe + reseed the caller's own data).
     allow_reset: bool = False
 
+    # Comma-separated emails granted the coach role. A coach can view every
+    # athlete's data and assign workouts to them (see routers/coach.py).
+    coach_emails: str = ""
+
     # Swagger /docs, /redoc, /openapi.json — off by default (attack-surface map).
     enable_docs: bool = False
 
@@ -69,6 +73,10 @@ class Settings(BaseSettings):
                 key, sport = pair.split("=", 1)
                 rules.append((key.strip().lower(), sport.strip()))
         return rules
+
+    @property
+    def coach_email_list(self) -> list[str]:
+        return [e.strip().lower() for e in self.coach_emails.split(",") if e.strip()]
 
     @property
     def cors_origin_list(self) -> list[str]:

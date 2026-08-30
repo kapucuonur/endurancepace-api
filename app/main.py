@@ -10,7 +10,16 @@ from slowapi.errors import RateLimitExceeded
 from app import __version__
 from app.config import settings
 from app.ratelimit import limiter
-from app.routers import athlete, auth, events, garmin, plans, snapshot, workouts
+from app.routers import (
+    athlete,
+    auth,
+    coach,
+    events,
+    garmin,
+    plans,
+    snapshot,
+    workouts,
+)
 
 # Docs / OpenAPI are OFF by default — they map the whole attack surface.
 # Set ENDURANCEPACE_ENABLE_DOCS=true for local dev.
@@ -63,5 +72,6 @@ for r in (
     events.router,
     workouts.router,
     garmin.router,
+    coach.router,
 ):
     app.include_router(r)

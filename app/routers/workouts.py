@@ -34,6 +34,36 @@ from app.serialize import dump, dump_list
 router = APIRouter(prefix="/workouts", tags=["workouts"])
 
 
+def apply_workout_patch(workout: Workout, patch: WorkoutUpdate) -> None:
+    """Mutate `workout` in place from a `WorkoutUpdate` (shared with the coach
+    router). Does not commit."""
+    data = patch.model_dump(exclude_unset=True, by_alias=False)
+
+    for field in (
+        "plan_id",
+        "date",
+        "sport",
+        "title",
+        "description",
+        "status",
+        "is_template",
+        "template_category",
+    ):
+        if field in data:
+            setattr(workout, field, data[field])
+
+    if "planned_duration" in data and data["planned_duration"] is not None:
+        workout.planned_duration = int(round(data["planned_duration"]))
+    if "planned_tss" in data and data["planned_tss"] is not None:
+        workout.planned_tss = int(round(data["planned_tss"]))
+    if "structure" in data:
+        workout.structure = dump_list(patch.structure) or []
+    if "completed" in data:
+        workout.completed = dump(patch.completed)
+
+    workout.updated_at = now_iso()
+
+
 def _owned(db: Session, athlete: Athlete, workout_id: str) -> Workout:
     workout = (
         db.query(Workout)
@@ -119,31 +149,7 @@ def update_workout(
     athlete: Athlete = Depends(get_current_athlete),
 ) -> Workout:
     workout = _owned(db, athlete, workout_id)
-    data = patch.model_dump(exclude_unset=True, by_alias=False)
-
-    for field in (
-        "plan_id",
-        "date",
-        "sport",
-        "title",
-        "description",
-        "status",
-        "is_template",
-        "template_category",
-    ):
-        if field in data:
-            setattr(workout, field, data[field])
-
-    if "planned_duration" in data and data["planned_duration"] is not None:
-        workout.planned_duration = int(round(data["planned_duration"]))
-    if "planned_tss" in data and data["planned_tss"] is not None:
-        workout.planned_tss = int(round(data["planned_tss"]))
-    if "structure" in data:
-        workout.structure = dump_list(patch.structure) or []
-    if "completed" in data:
-        workout.completed = dump(patch.completed)
-
-    workout.updated_at = now_iso()
+    apply_workout_patch(workout, patch)
     db.commit()
     db.refresh(workout)
     return workout

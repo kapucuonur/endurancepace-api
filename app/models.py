@@ -76,10 +76,27 @@ class Athlete(Base):
     # Deleting an athlete (or its user) removes everything it owns — no orphans.
     plans = relationship("TrainingPlan", cascade="all, delete-orphan")
     events = relationship("RaceEvent", cascade="all, delete-orphan")
-    workouts = relationship("Workout", cascade="all, delete-orphan")
+    workouts = relationship(
+        "Workout",
+        cascade="all, delete-orphan",
+        foreign_keys="Workout.athlete_id",
+    )
     garmin_session = relationship(
         "GarminSession", cascade="all, delete-orphan", uselist=False
     )
+
+    @property
+    def email(self) -> str | None:
+        return self.user.email if self.user else None
+
+    @property
+    def role(self) -> str:
+        """`"coach"` when this athlete's login is in ``COACH_EMAILS``, else
+        `"athlete"`. Not stored — derived from config on every read."""
+        from app.config import settings
+
+        addr = (self.email or "").lower()
+        return "coach" if addr and addr in settings.coach_email_list else "athlete"
 
 
 class TrainingPlan(Base):
@@ -139,9 +156,12 @@ class Workout(Base):
     # Provenance. `source` is "manual" (app-built) or "garmin" (imported).
     # `external_id` is the Garmin activityId; unique per athlete for dedup.
     # `garmin_raw` keeps the sanitized payload for re-processing / debugging.
+    # "manual" (app-built) | "garmin" (imported) | "coach" (assigned by a coach).
     source = Column(String, nullable=False, default="manual")
     external_id = Column(String, nullable=True)
     garmin_raw = Column(JSON, nullable=True)
+    # The coach who assigned this workout, when `source == "coach"`.
+    assigned_by_id = Column(String, ForeignKey("athletes.id"), nullable=True)
 
     created_at = Column(String, nullable=False)
     updated_at = Column(String, nullable=False)

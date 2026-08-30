@@ -21,3 +21,13 @@ def get_current_athlete(
             status_code=status.HTTP_404_NOT_FOUND, detail="No athlete for this user"
         )
     return athlete
+
+
+def get_current_coach(athlete: Athlete = Depends(get_current_athlete)) -> Athlete:
+    """Like `get_current_athlete`, but 403s unless the caller's login is listed
+    in ``COACH_EMAILS``."""
+    if athlete.role != "coach":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Coach access required"
+        )
+    return athlete

@@ -93,6 +93,11 @@ The seed script *does* compute them, via `app/workout_metrics.py` (a port of
 | `updateWorkout(id, patch)` | `PATCH /workouts/{id}` |
 | `deleteWorkout(id)` | `DELETE /workouts/{id}` — 204 |
 | `scheduleFromTemplate(tId,date,planId?)` | `POST /workouts/{tId}/schedule` body `{ date, planId }` |
+| `listCoachAthletes()` | `GET /coach/athletes` — 403 unless caller's email is in `COACH_EMAILS` |
+| `coachAthleteSnapshot(id)` | `GET /coach/athletes/{id}/snapshot` |
+| `assignWorkout(id, input)` | `POST /coach/athletes/{id}/workouts` — creates a `source:"coach"` workout |
+| `updateAssignedWorkout(id, wId, patch)` | `PATCH /coach/athletes/{id}/workouts/{wId}` — coach's own assignments only |
+| `withdrawAssignedWorkout(id, wId)` | `DELETE /coach/athletes/{id}/workouts/{wId}` — 204 |
 | — | `POST /auth/signup` `{ email, password, name? }` → 201 `{ email }` |
 | — | `POST /auth/login` `{ email, password }` → `{ token }` |
 | — | `GET /health` |
