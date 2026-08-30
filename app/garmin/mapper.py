@@ -69,6 +69,39 @@ def resolve_actual_tss(activity: dict, thresholds: dict) -> Optional[int]:
     return None
 
 
+def actuals_from_activity(activity: dict) -> dict:
+    """The measured numbers Garmin reports for an activity. Only keys with a
+    real, positive value come back, so `completed` stays as lean as the
+    manual-log shape (date / durationSeconds / actualTss / rpe / notes)."""
+    out: dict[str, float] = {}
+
+    pairs = (
+        ("distanceMeters", _num(activity.get("distance"))),
+        ("avgSpeedMps", _num(activity.get("averageSpeed"), activity.get("avgSpeed"))),
+        ("avgHr", _num(activity.get("averageHR"), activity.get("averageHeartRate"))),
+        ("maxHr", _num(activity.get("maxHR"), activity.get("maxHeartRate"))),
+        (
+            "elevationGainM",
+            _num(activity.get("elevationGain"), activity.get("totalElevationGain")),
+        ),
+        (
+            "avgCadence",
+            _num(
+                activity.get("averageRunningCadenceInStepsPerMinute"),
+                activity.get("averageBikingCadenceInRevPerMinute"),
+                activity.get("averageCadence"),
+            ),
+        ),
+        ("avgPower", _num(activity.get("avgPower"), activity.get("averagePower"))),
+        ("calories", _num(activity.get("calories"))),
+    )
+    for key, value in pairs:
+        if value and value > 0:
+            # sub-integer precision only matters for speed and cadence
+            out[key] = round(value, 3) if key in ("avgSpeedMps", "avgCadence") else round(value)
+    return out
+
+
 def activity_to_workout_fields(activity: dict, athlete) -> Optional[dict]:
     """Returns the persist-ready field dict, or None if the sport is unmapped."""
     sport = map_sport(activity)
@@ -85,6 +118,7 @@ def activity_to_workout_fields(activity: dict, athlete) -> Optional[dict]:
         completed["durationSeconds"] = round(duration)
     if actual_tss is not None:
         completed["actualTss"] = actual_tss
+    completed.update(actuals_from_activity(activity))
 
     return {
         "external_id": str(activity.get("activityId")),

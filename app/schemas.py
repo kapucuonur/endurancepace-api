@@ -21,6 +21,8 @@ from pydantic.alias_generators import to_camel
 Sport = Literal["swim", "bike", "run", "strength"]
 PeriodizationPhase = Literal["base", "build", "peak", "taper", "race", "recovery"]
 WorkoutStatus = Literal["planned", "completed", "skipped", "modified"]
+WorkoutSource = Literal["manual", "garmin", "coach"]
+AthleteRole = Literal["athlete", "coach"]
 StepType = Literal["warmup", "interval", "recovery", "cooldown", "steady"]
 RacePriority = Literal["A", "B", "C"]
 PaceUnit = Literal["sec_per_km", "sec_per_100m"]
@@ -117,8 +119,18 @@ class AthleteOut(CamelModel):
     run_pace_zones: Optional[list[Zone]] = None
     weight_kg: Optional[float] = None
     birthdate: Optional[str] = None
+    # Derived from COACH_EMAILS, not stored. Drives the coach UI in the app.
+    role: AthleteRole = "athlete"
     created_at: str
     updated_at: str
+
+
+class CoachAthleteOut(CamelModel):
+    """One row in a coach's athlete roster."""
+
+    id: str
+    name: str
+    email: str
 
 
 class AthleteUpdate(CamelModel):
@@ -230,6 +242,16 @@ class CompletedInfo(CamelModel):
     actual_tss: Optional[float] = None
     rpe: Optional[float] = None
     notes: Optional[str] = None
+    # Measured metrics from an imported Garmin activity — all optional, all
+    # metric units. Absent for a hand-logged session.
+    distance_meters: Optional[float] = None
+    avg_speed_mps: Optional[float] = None
+    avg_hr: Optional[float] = None
+    max_hr: Optional[float] = None
+    elevation_gain_m: Optional[float] = None
+    avg_cadence: Optional[float] = None
+    avg_power: Optional[float] = None
+    calories: Optional[float] = None
 
 
 class WorkoutBase(CamelModel):
@@ -280,6 +302,10 @@ class WorkoutOut(CamelModel):
     completed: Optional[CompletedInfo] = None
     is_template: bool
     template_category: Optional[str] = None
+    # "manual" (app-built), "garmin" (imported), or "coach" (assigned to me).
+    source: WorkoutSource = "manual"
+    # Coach who assigned this workout, when source == "coach".
+    assigned_by_id: Optional[str] = None
     created_at: str
     updated_at: str
 

@@ -8,7 +8,12 @@ import pytest
 
 from app.garmin import ingest
 from app.garmin.client import LoginOutcome
-from app.garmin.mapper import map_sport, pick_match, resolve_actual_tss
+from app.garmin.mapper import (
+    actuals_from_activity,
+    map_sport,
+    pick_match,
+    resolve_actual_tss,
+)
 from app.garmin.profile import athlete_metrics
 from app.sanitize import sanitize_for_json
 from tests.conftest import auth_headers
@@ -20,7 +25,12 @@ RUN = {
     "startTimeGMT": "2026-08-28 05:00:00",
     "duration": 2400.0,
     "distance": 8000.0,
+    "averageSpeed": 3.333,
     "averageHR": 150,
+    "maxHR": 172,
+    "elevationGain": 96.0,
+    "averageRunningCadenceInStepsPerMinute": 168,
+    "calories": 620,
     "trainingStressScore": 55,
     "activityType": {"typeKey": "running"},
 }
@@ -74,6 +84,18 @@ def test_resolve_actual_tss_priority():
     assert resolve_actual_tss(BIKE_NO_TSS, {"thresholdHr": 150}) == 87
     # nothing usable
     assert resolve_actual_tss(BIKE_NO_TSS, {}) is None
+
+
+def test_actuals_from_activity():
+    a = actuals_from_activity(RUN)
+    assert a["distanceMeters"] == 8000
+    assert a["avgSpeedMps"] == 3.333
+    assert a["avgHr"] == 150 and a["maxHr"] == 172
+    assert a["elevationGainM"] == 96
+    assert a["avgCadence"] == 168
+    assert a["calories"] == 620
+    # nothing measured -> empty, and zero / missing values are dropped
+    assert actuals_from_activity({"distance": 0, "averageHR": None}) == {}
 
 
 def test_pick_match_closest_duration():
@@ -203,7 +225,14 @@ def test_sync_imports_and_dedups(client, monkeypatch):
     assert w["sport"] == "run" and w["status"] == "completed"
     assert w["completed"]["actualTss"] == 55
     assert w["completed"]["durationSeconds"] == 2400
+    assert w["completed"]["distanceMeters"] == 8000
+    assert w["completed"]["avgHr"] == 150
+    assert w["completed"]["maxHr"] == 172
+    assert w["completed"]["elevationGainM"] == 96
+    assert w["completed"]["avgCadence"] == 168
+    assert w["completed"]["calories"] == 620
     assert w["plannedTss"] == 55
+    assert w["source"] == "garmin"
 
     # bump the min-interval so the 2nd sync isn't debounced
     import app.config as cfg
