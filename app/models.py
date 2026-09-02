@@ -171,6 +171,30 @@ class Workout(Base):
     )
 
 
+class Message(Base):
+    """A single direct message between two athletes.
+
+    Used for coach ↔ athlete chat (see routers/messages.py). One flat table —
+    a "conversation" is just every row where a given pair are sender/recipient,
+    in either direction. No relationships back to ``Athlete``: rows are queried
+    directly by id, and ``Athlete`` already carries two FKs from ``Workout``.
+    """
+
+    __tablename__ = "messages"
+
+    id = Column(String, primary_key=True)
+    sender_id = Column(
+        String, ForeignKey("athletes.id"), nullable=False, index=True
+    )
+    recipient_id = Column(
+        String, ForeignKey("athletes.id"), nullable=False, index=True
+    )
+    body = Column(Text, nullable=False)
+    created_at = Column(String, nullable=False, index=True)
+    # Set when the recipient first loads the thread. NULL = unread.
+    read_at = Column(String, nullable=True)
+
+
 class GarminSession(Base):
     """Per-athlete Garmin auth state. Replaces ai-coach's in-memory module
     globals (GLOBAL_CLIENTS / SESSION_LAST_VERIFIED / FAILED_LOGIN_COOLDOWN /
