@@ -133,6 +133,43 @@ class CoachAthleteOut(CamelModel):
     email: str
 
 
+class MessagePartner(CamelModel):
+    """The other athlete in a conversation."""
+
+    id: str
+    name: str
+    email: str
+    role: AthleteRole = "athlete"
+
+
+class MessageOut(CamelModel):
+    id: str
+    sender_id: str
+    recipient_id: str
+    body: str
+    created_at: str
+    read_at: Optional[str] = None
+
+
+class MessageThreadOut(CamelModel):
+    partner: MessagePartner
+    last_message: MessageOut
+    unread_count: int
+
+
+class MessageCreate(CamelModel):
+    body: str = Field(min_length=1, max_length=4000)
+
+
+class MessagesPage(CamelModel):
+    partner: MessagePartner
+    messages: list[MessageOut]
+
+
+class UnreadCountOut(CamelModel):
+    count: int
+
+
 class AthleteUpdate(CamelModel):
     """`Partial<Athlete>` — mirrors MockApi.updateAthlete (stores as given, does
     NOT recompute zones; only PUT /me/athlete/thresholds recomputes)."""

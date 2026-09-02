@@ -16,6 +16,7 @@ from app.routers import (
     coach,
     events,
     garmin,
+    messages,
     plans,
     snapshot,
     workouts,
@@ -73,5 +74,6 @@ for r in (
     workouts.router,
     garmin.router,
     coach.router,
+    messages.router,
 ):
     app.include_router(r)
