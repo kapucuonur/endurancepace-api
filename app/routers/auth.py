@@ -11,6 +11,7 @@ from app.clock import now_iso
 from app.database import get_db
 from app.ids import new_id
 from app.garmin import mfa_registry
+from app.garmin.client import GarminClient
 from app.models import Athlete, Message, User, Workout
 from app.ratelimit import limiter
 from app.schemas import DeleteAccountBody, LoginBody, SignupBody, TokenResponse
@@ -101,5 +102,9 @@ def delete_account(
         ).update({Workout.assigned_by_id: None}, synchronize_session=False)
         mfa_registry.take(athlete.id)
 
+    garmin_email = user.garmin_email
     db.delete(user)
     db.commit()
+    # garth also caches the Garmin session on disk; Garmin disconnect clears it, so must we.
+    if garmin_email:
+        GarminClient.forget_disk(garmin_email)

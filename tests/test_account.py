@@ -108,3 +108,21 @@ def test_deleting_coach_keeps_athletes_workouts_and_drops_messages(
         assert db.query(Message).count() == 0
     finally:
         db.close()
+
+
+def test_delete_forgets_cached_garmin_session(client, db_sessionmaker, monkeypatch):
+    from app.garmin.client import GarminClient
+
+    forgotten = []
+    monkeypatch.setattr(GarminClient, "forget_disk", staticmethod(forgotten.append))
+
+    h = auth_headers(client)
+    db = db_sessionmaker()
+    try:
+        db.query(User).one().garmin_email = "rider@garmin.example"
+        db.commit()
+    finally:
+        db.close()
+
+    assert _delete(client, h).status_code == 204
+    assert forgotten == ["rider@garmin.example"]
