@@ -373,6 +373,10 @@ class LoginBody(CamelModel):
     password: str
 
 
+class DeleteAccountBody(CamelModel):
+    password: str
+
+
 class TokenResponse(CamelModel):
     token: str
     token_type: str = "bearer"
