@@ -67,6 +67,8 @@ class StepDurationTime(CamelModel):
 class StepDurationDistance(CamelModel):
     kind: Literal["distance"]
     meters: float
+    # Expected average speed, used to estimate time for bike distance steps.
+    speed_kmh: Optional[float] = Field(default=None, gt=0, le=80)
 
 
 StepDuration = Annotated[
@@ -93,12 +95,24 @@ class StepTarget(CamelModel):
     rpe: Optional[float] = None
 
 
+class StepExercise(CamelModel):
+    """A strength exercise. `key` names an entry in the app's exercise catalog;
+    for holds (plank) `reps` is the hold time in seconds."""
+
+    key: str = Field(pattern=r"^[a-z0-9_]{1,40}$")
+    sets: int = Field(ge=1, le=20)
+    reps: int = Field(ge=1, le=300)
+    weight_kg: Optional[float] = Field(default=None, ge=0, le=500)
+    rest_sec: int = Field(default=90, ge=0, le=900)
+
+
 class Step(CamelModel):
     id: str
     type: StepType
     label: Optional[str] = None
     duration: Optional[StepDuration] = None
     target: Optional[StepTarget] = None
+    exercise: Optional[StepExercise] = None
     repeat_count: int = 1
     children: list["Step"] = Field(default_factory=list)
 
